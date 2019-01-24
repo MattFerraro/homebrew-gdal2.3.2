@@ -1,336 +1,169 @@
-class Gdal232 < Formula
-  desc "GDAL: Geospatial Data Abstraction Library"
+class Gdal < Formula
+  desc "Geospatial Data Abstraction Library"
   homepage "https://www.gdal.org/"
-  url "https://github.com/OSGeo/gdal/archive/v2.3.2.tar.gz"
-  sha256 "e0f751bff9ba6fb541065acbe7a76007be76a3c6309240faf4e6440f6ff1702a"
+  url "https://download.osgeo.org/gdal/2.3.2/gdal-2.3.2.tar.xz"
+  sha256 "3f6d78fe8807d1d6afb7bed27394f19467840a82bc36d65e66316fa0aa9d32a4"
+  revision 1
 
-  revision 2
+  bottle do
+    rebuild 2
+    sha256 "1ebee988a01554396a8088744237faa72061fa1b9e0d4c62dcef5106b746eb0b" => :mojave
+    sha256 "fcd1ba09e3309176f3a408a83ba0e77dbd5d97930bf7db2c1bbd1efda0d0acfa" => :high_sierra
+    sha256 "822726f02695989901e1008c8b9ffb725478c2799835db1d75b0f6dc74a65719" => :sierra
+  end
 
   head do
-    url "https://github.com/OSGeo/gdal.git", :branch => "master"
+    url "https://github.com/OSGeo/gdal.git"
     depends_on "doxygen" => :build
   end
 
-  bottle do
-    root_url "https://dl.bintray.com/homebrew-osgeo/osgeo-bottles"
-    sha256 "94d40e4981d418ce3d4bc1e596dfc862638dcc968f1e3eb7a768417ce984e844" => :mojave
-    sha256 "94d40e4981d418ce3d4bc1e596dfc862638dcc968f1e3eb7a768417ce984e844" => :high_sierra
-    sha256 "94d40e4981d418ce3d4bc1e596dfc862638dcc968f1e3eb7a768417ce984e844" => :sierra
-  end
-
-  keg_only "older version of gdal is in main tap and installs similar components"
-
-  option "with-complete", "Use additional Homebrew libraries to provide more drivers."
-  option "with-qhull", "Build with internal qhull libary support"
-  option "with-opencl", "Build with OpenCL acceleration."
-  option "with-armadillo", "Build with Armadillo accelerated TPS transforms."
-  option "with-unsupported", "Allow configure to drag in any library it can find. Invoke this at your own risk."
-  option "with-mdb", "Build with Access MDB driver (requires Java 1.6+ JDK/JRE, from Apple or Oracle)."
-  option "without-gnm", "Build without Geographic Network Model support"
-  option "with-libkml", "Build with Google's libkml driver (requires libkml-dev >= 1.3)"
-  option "with-swig-java", "Build the swig java bindings"
-  option "with-sfcgal", "Build with CGAL C++ wrapper support"
-  option "with-ogdi", "Build with OGDI support (consider gdal2-ogdi instead)"
-
-  deprecated_option "enable-opencl" => "with-opencl"
-  deprecated_option "enable-armadillo" => "with-armadillo"
-  deprecated_option "enable-unsupported" => "with-unsupported"
-  deprecated_option "complete" => "with-complete"
-  deprecated_option "with-java" => "with-swig-java"
-
-  depends_on "pkg-config"
-  depends_on "libiconv"
+  depends_on "cfitsio"
+  depends_on "epsilon"
   depends_on "expat"
-  depends_on "zlib"
-  depends_on "qhull"
-  depends_on "curl"
-  # depends_on "charls" # Cask
-  depends_on "libpng"
   depends_on "freexl"
   depends_on "geos"
+  depends_on "giflib"
+  depends_on "hdf5"
+  depends_on "jasper"
   depends_on "jpeg"
   depends_on "json-c"
-  depends_on "giflib"
+  depends_on "libdap"
   depends_on "libgeotiff"
+  depends_on "libpng"
   depends_on "libpq"
-  depends_on "sqlite" # To ensure compatibility with SpatiaLite.
-  depends_on "pcre" # for REGEXP operator in SQLite/Spatialite driver
   depends_on "libspatialite"
   depends_on "libtiff"
-  depends_on "proj"
+  depends_on "libxml2"
+  depends_on "netcdf"
   depends_on "numpy"
-  depends_on "libkml-dev" if build.with? "libkml"
-  depends_on "postgresql" => :optional
-  depends_on "mysql" => :optional
-  depends_on "ogdi" => :optional
-  depends_on "armadillo" => :optional
-  depends_on "sfcgal" => :optional
+  depends_on "pcre"
+  depends_on "podofo"
+  depends_on "poppler"
+  depends_on "proj"
+  depends_on "python"
+  depends_on "python@2"
+  depends_on "sqlite" # To ensure compatibility with SpatiaLite
+  depends_on "unixodbc" # macOS version is not complete enough
+  depends_on "webp"
+  depends_on "xerces-c"
+  depends_on "xz" # get liblzma compression algorithm library from XZutils
+  depends_on "zstd"
 
-  if build.with? "swig-java"
-    depends_on :java => ["1.8", :build]
-    depends_on "ant" => :build
-    depends_on "swig" => :build
-  end
-
-  if build.with? "complete"
-    # Raster libraries
-    depends_on "netcdf" # Also brings in HDF5
-    depends_on "osgeo/osgeo4mac/hdf4"
-    depends_on "cfitsio"
-    depends_on "epsilon"
-    depends_on "hdf5"
-    depends_on "jasper"
-    depends_on "libdap"
-    depends_on "libxml2"
-    depends_on "openjpeg"
-    depends_on "zstd"
-    depends_on "webp"
-    # Vector libraries
-    depends_on "unixodbc" # OS X version is not complete enough
-    depends_on "xerces-c"
-    # Other libraries
-    depends_on "xz" # get liblzma compression algorithm library from XZutils
-  end
-
-  def configure_args
+  def install
     args = [
-      # Base configuration.
+      # Base configuration
       "--prefix=#{prefix}",
       "--mandir=#{man}",
       "--disable-debug",
       "--with-libtool",
       "--with-local=#{prefix}",
+      "--with-opencl",
       "--with-threads",
+
       # GDAL native backends
       "--with-bsb",
       "--with-grib",
       "--with-pam",
       "--with-pcidsk=internal",
       "--with-pcraster=internal",
-      # Other
-      "--with-libiconv-prefix=#{Formula["libiconv"].opt_prefix}",
-      "--with-libz=#{Formula["libzip"].opt_prefix}",
-      "--with-curl=#{Formula["curl"].opt_bin}/curl-config",
+
+      # Homebrew backends
+      "--with-curl=/usr/bin/curl-config",
+      "--with-expat=#{Formula["expat"].prefix}",
       "--with-freexl=#{Formula["freexl"].opt_prefix}",
       "--with-geos=#{Formula["geos"].opt_prefix}/bin/geos-config",
-      "--with-geotiff=internal",
-      "--with-libtiff=internal",
+      "--with-geotiff=#{Formula["libgeotiff"].opt_prefix}",
       "--with-gif=#{Formula["giflib"].opt_prefix}",
+      "--with-jpeg=#{Formula["jpeg"].opt_prefix}",
       "--with-libjson-c=#{Formula["json-c"].opt_prefix}",
+      "--with-libtiff=#{Formula["libtiff"].opt_prefix}",
+      "--with-pg=#{Formula["libpq"].opt_prefix}/bin/pg_config",
       "--with-png=#{Formula["libpng"].opt_prefix}",
       "--with-spatialite=#{Formula["libspatialite"].opt_prefix}",
-      "--with-expat=#{Formula["expat"].opt_prefix}",
       "--with-sqlite3=#{Formula["sqlite"].opt_prefix}",
+      "--with-static-proj4=#{Formula["proj"].opt_prefix}",
       "--with-zstd=#{Formula["zstd"].opt_prefix}",
-      "--with-xml2=#{Formula["libxml2"].opt_bin}/xml2-config",
-      "--with-webp=#{Formula["webp"].opt_prefix}",
-      "--with-netcdf=#{Formula["netcdf"].opt_prefix}",
-      "--with-hdf5=#{Formula["hdf5"].opt_prefix}",
-      # "--with-jasper=#{Formula["jasper"].opt_prefix}"
-      "--with-openjpeg=#{Formula["openjpeg"].opt_prefix}",
-      "--with-cfitsio=#{Formula["cfitsio"].opt_prefix}",
-      "--with-proj=#{Formula["proj"].opt_prefix}",
-      "--with-jpeg=#{Formula["jpeg"].opt_prefix}",
-      # GRASS backend explicitly disabled.  Creates a chicken-and-egg problem.
-      # Should be installed separately after GRASS installation using the
-      # official GDAL GRASS plugin.
+      "--with-liblzma=yes",
+      "--with-cfitsio=/usr/local",
+      "--with-hdf5=/usr/local",
+      "--with-netcdf=/usr/local",
+      "--with-jasper=/usr/local",
+      "--with-xerces=/usr/local",
+      "--with-odbc=/usr/local",
+      "--with-dods-root=/usr/local",
+      "--with-epsilon=/usr/local",
+      "--with-webp=/usr/local",
+      "--with-podofo=/usr/local",
+
+      # Explicitly disable some features
+      "--with-armadillo=no",
+      "--with-qhull=no",
       "--without-grass",
+      "--without-jpeg12",
       "--without-libgrass",
-      # Python is installed manually to ensure everything is properly sandboxed
-      "--without-python",
+      "--without-mysql",
       "--without-perl",
       "--without-php",
+      "--without-python",
+      "--without-ruby",
+
+      # Unsupported backends are either proprietary or have no compatible version
+      # in Homebrew. Podofo is disabled because Poppler provides the same
+      # functionality and then some.
+      "--without-gta",
+      "--without-ogdi",
       "--without-fme",
+      "--without-hdf4",
+      "--without-openjpeg",
+      "--without-fgdb",
       "--without-ecw",
       "--without-kakadu",
       "--without-mrsid",
       "--without-jp2mrsid",
+      "--without-mrsid_lidar",
       "--without-msg",
       "--without-oci",
       "--without-ingres",
-      "--without-odbc",
+      "--without-dwgdirect",
       "--without-idb",
       "--without-sde",
-      "--without-jpeg12", # Needs specially configured JPEG and TIFF libraries
-      # "--with-static-proj4",
-      # "--with-charls=yes",
-    ]
-    args
-  end
-
-  def plugins_subdirectory
-    gdal_ver_list = version.to_s.split(".")
-    "gdalplugins/#{gdal_ver_list[0]}.#{gdal_ver_list[1]}"
-  end
-
-  def install
-    args = configure_args
-
-    # Optional Homebrew packages supporting additional formats.
-    supported_backends = %w[
-      liblzma
-      hdf4
-      hdf5
-      cfitsio
-      netcdf
-      jasper
-      xerces
-      odbc
-      dods-root
-      epsilon
-      zstd
-      webp
-      ogdi
+      "--without-podofo",
+      "--without-rasdaman",
+      "--without-sosi",
     ]
 
-    # The following libraries are either proprietary, not available for public
-    # download or have no stable version in the Homebrew core that is
-    # compatible with GDAL. Interested users will have to install such software
-    # manually and most likely have to tweak the install routine.
-    unsupported_backends = %w[
-      dwgdirect
-      podofo
-      gta
-      fme
-      fgdb
-      ecw
-      kakadu
-      mrsid
-      jp2mrsid
-      mrsid_lidar
-      msg
-      oci
-      ingres
-      idb
-      sde
-      rasdaman
-      sosi
-    ]
-    args.concat(unsupported_backends.map { |b| "--without-" + b }) if build.without? "unsupported"
-
-    if build.with? "complete"
-      supported_backends.delete "liblzma"
-      args << "--with-liblzma=yes"
-      args.concat(supported_backends.map { |b| "--with-" + b + "=" + HOMEBREW_PREFIX })
-    elsif build.without? "unsupported"
-      args.concat(supported_backends.map { |b| "--without-" + b })
+    # Work around "error: no member named 'signbit' in the global namespace"
+    if DevelopmentTools.clang_build_version >= 900
+      ENV.delete "SDKROOT"
+      ENV.delete "HOMEBREW_SDKROOT"
     end
 
-    if build.without? "unsupported"
-      args.concat unsupported_backends.map { |b| "--without-" + b }
-    end
+    system "./configure", *args
+    system "make"
+    system "make", "install"
 
-    # Database support
-    args << (build.with?("postgresql") ? "--with-pg=#{HOMEBREW_PREFIX}/bin/pg_config" : "--without-pg")
-    args << (build.with?("mysql") ? "--with-mysql=#{HOMEBREW_PREFIX}/bin/mysql_config" : "--without-mysql")
-
-    args << "--with-libkml=#{Formula["libkml-dev"].opt_prefix}" if build.with? "libkml"
-
-    args << "--with-qhull=#{build.with?("qhull") ? "internal" : "no"}"
-
-    args << "--without-gnm" if build.without? "gnm"
-
-    # All PDF driver functionality moved to gdal2-pdf plugin
-    # Older pdfium (for gdal driver) is still built against libstdc++ and
-    # causes the base build to be built like that as well.
-    # See: https://github.com/rouault/pdfium
-    args << "--with-pdfium=no"
-    args << "--with-poppler=no"
-    args << "--with-podofo=no"
-
-    args << "--with-ogdi=#{build.with?("ogdi") ? Formula["ogdi"].opt_prefix.to_s : "no"}"
-
-    args << "--with-sfcgal=#{build.with?("sfcgal") ? HOMEBREW_PREFIX/"bin/sfcgal-config" : "no"}"
-
-    args << (build.with?("opencl") ? "--with-opencl" : "--without-opencl")
-    args << (build.with?("armadillo") ? "--with-armadillo=#{Formula["armadillo"].opt_prefix}" : "--with-armadillo=no")
-
-    # Linking flags for SQLite are not added at a critical moment when the GDAL
-    # library is being assembled. This causes the build to fail due to missing
-    # symbols. Also, ensure Homebrew SQLite is used so that Spatialite is
-    # functional
-    # Fortunately, this can be remedied using LDFLAGS
-    sqlite = Formula["sqlite"]
-    ENV.append "LDFLAGS", "-L#{sqlite.opt_lib} -lsqlite3"
-    ENV.append "CFLAGS", "-I#{sqlite.opt_include}"
-
-    ENV.append "LDFLAGS", "-L#{Formula["ogdi"].opt_lib}/ogdi" if build.with? "ogdi"
-
-    # Reset ARCHFLAGS to match how we build
-    ENV["ARCHFLAGS"] = "-arch #{MacOS.preferred_arch}"
-
-    # Temporary fix for Xcode/CLT 9.0.x issue of missing header files
-    # See: https://github.com/OSGeo/homebrew-osgeo4mac/issues/276
-    ENV.delete("SDKROOT") if DevelopmentTools.clang_build_version >= 900
-
-    chdir "gdal" do
-      # GDAL looks for the renamed hdf4 library, which is an artifact of old builds, so we need to repoint it
-      inreplace "configure", "-ldf", "-lhdf" if build.with? "complete"
-
-      # Fix hardcoded mandir: http://trac.osgeo.org/gdal/ticket/5092
-      inreplace "configure", %r[^mandir='\$\{prefix\}/man'$], ""
-
-      # These libs are statically linked in libkml-dev and libkml formula
-      inreplace "configure", " -lminizip -luriparser", "" if build.with? "libkml"
-
-      # All PDF driver functionality moved to gdal2-pdf plugin,
-      # so nix default internal-built PDF w+ driver, which keeps plugin from loading.
-      # Just using --enable-pdf-plugin isn't enough (we don't want the plugin built here)
-      inreplace "GDALmake.opt.in", "PDF_PLUGIN),yes", "PDF_PLUGIN),no"
-
-      system "./configure", *args
-      system "make"
-      system "make", "install"
-
-      # Add GNM headers for gdal2-python swig wrapping
-      include.install Dir["gnm/**/*.h"] if build.with? "gnm"
-
-      if build.with? "swig-java"
-        cd "swig/java" do
-          inreplace "java.opt", "linux", "darwin"
-          inreplace "java.opt", "#JAVA_HOME = /usr/lib/jvm/java-6-openjdk/", "JAVA_HOME=#{ENV["JAVA_HOME"]}"
-          system "make"
-          system "make", "install"
-
-          # Install the jar that complements the native JNI bindings
-          lib.install "gdal.jar"
-        end
+    if build.stable? # GDAL 2.3 handles Python differently
+      cd "swig/python" do
+        system "python3", *Language::Python.setup_install_args(prefix)
+        system "python2", *Language::Python.setup_install_args(prefix)
       end
-
-      system "make", "man" if build.head?
-      # Force man installation dir: https://trac.osgeo.org/gdal/ticket/5092
-      system "make", "install-man", "INST_MAN=#{man}"
-      # Clean up any stray doxygen files
-      system "make", "install-man"
-      # Clean up any stray doxygen files.
-      Dir.glob("#{bin}/*.dox") { |p| rm p }
+      bin.install Dir["swig/python/scripts/*.py"]
     end
-  end
 
-  def post_install
-    # Create versioned plugins path for other formulae
-    (HOMEBREW_PREFIX/"lib/#{plugins_subdirectory}").mkpath
-  end
-
-  def caveats
-    s = <<~EOS
-      Plugins for this version of GDAL/OGR, generated by other formulae, should
-      be symlinked to the following directory:
-
-        #{HOMEBREW_PREFIX}/lib/#{plugins_subdirectory}
-
-      You may need to set the following enviroment variable:
-
-        export GDAL_DRIVER_PATH=#{HOMEBREW_PREFIX}/lib/gdalplugins
-
-      PYTHON BINDINGS are now built in a separate formula: gdal2-python
-    EOS
-    s
+    system "make", "man" if build.head?
+    # Force man installation dir: https://trac.osgeo.org/gdal/ticket/5092
+    system "make", "install-man", "INST_MAN=#{man}"
+    # Clean up any stray doxygen files
+    Dir.glob("#{bin}/*.dox") { |p| rm p }
   end
 
   test do
     # basic tests to see if third-party dylibs are loading OK
     system "#{bin}/gdalinfo", "--formats"
     system "#{bin}/ogrinfo", "--formats"
+    if build.stable? # GDAL 2.3 handles Python differently
+      system "python3", "-c", "import gdal"
+      system "python2", "-c", "import gdal"
+    end
   end
 end
